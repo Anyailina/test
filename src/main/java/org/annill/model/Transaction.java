@@ -1,7 +1,7 @@
 package org.annill.model;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import org.annill.util.DateFormatUtils;
 
 public record Transaction(
     LocalDateTime timestamp,
@@ -10,29 +10,16 @@ public record Transaction(
     double amount,
     String targetUser) {
 
-    public static final DateTimeFormatter LOG_FORMATTER =
-        DateTimeFormatter.ofPattern("[yyyy-MM-dd HH:mm:ss]");
-
-    public String getFormattedTimestamp() {
-        return timestamp.format(LOG_FORMATTER);
-    }
 
     @Override
     public String toString() {
-        String action;
-        if (operationType == OperationType.BALANCE_INQUIRY) {
-            action = "balance inquiry " + amount;
-        } else if (operationType == OperationType.TRANSFERRED) {
-            action = "transferred " + amount + " to " + targetUser;
-        } else {
-            action = "не";
+        String action = "";
+        switch (operationType) {
+            case TRANSFERRED -> action = "transferred " + amount + " to " + targetUser;
+            case BALANCE_INQUIRY -> action = "balance inquiry " + amount;
+            case WITHDREW -> action = "withdrew " + amount;
         }
 
-        return String.format(
-            "[%s] %s %s",
-            getFormattedTimestamp(),
-            user,
-            action
-        );
+        return String.format("[%s] %s %s", DateFormatUtils.getFormattedTimestamp(timestamp), user, action);
     }
 }

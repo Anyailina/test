@@ -14,6 +14,7 @@ import java.util.TreeMap;
 import org.annill.model.CustomDate;
 import org.annill.model.Transaction;
 import org.annill.service.BalanceService;
+import org.annill.util.DateFormatUtils;
 import org.annill.util.FileUtils;
 import org.annill.util.TransactionLogParser;
 
@@ -46,8 +47,8 @@ public class Main {
         balanceService.getBalances().forEach((user, balance) -> {
             Path userFilePath = Path.of(PATH + user + ".log");
             String logLine = String.format(
-                "[%s] %s withdrew %.2f",
-                LocalDateTime.now().format(Transaction.LOG_FORMATTER),
+                "[%s] %s final balance %f",
+                DateFormatUtils.getFormattedTimestamp(LocalDateTime.now()),
                 user,
                 balance
             );

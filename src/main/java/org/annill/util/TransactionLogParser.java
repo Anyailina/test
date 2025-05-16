@@ -77,6 +77,7 @@ public final class TransactionLogParser {
                 yield new Transaction(timestamp, user, operation, amount, targetUser);
             }
 
+            case WITHDREW -> null;
         };
     }
 

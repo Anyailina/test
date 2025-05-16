@@ -2,7 +2,8 @@ package org.annill.model;
 
 public enum OperationType {
     BALANCE_INQUIRY("balance inquiry"),
-    TRANSFERRED("transferred");
+    TRANSFERRED("transferred"),
+    WITHDREW("withdrew");
 
     private final String text;
 
@@ -20,8 +21,6 @@ public enum OperationType {
     }
 
     public static String getPatternString() {
-        return String.join("|",
-            BALANCE_INQUIRY.text,
-            TRANSFERRED.text);
+        return String.join("|", BALANCE_INQUIRY.text, TRANSFERRED.text, WITHDREW.text);
     }
 }

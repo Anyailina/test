@@ -1,28 +1,42 @@
 package org.annill.service;
 
 
-
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.annill.model.Transaction;
 
 public class BalanceService {
+
     private final Map<String, Double> balances = new HashMap<>();
 
     public void processTransaction(Transaction t) {
+        String user = t.user();
         switch (t.operationType()) {
-            case BALANCE_INQUIRY -> balances.put(t.user(), t.amount());
+            case BALANCE_INQUIRY -> balances.put(user, t.amount());
             case TRANSFERRED -> {
-                balances.computeIfAbsent(t.user(), k -> 0.0);
-                balances.computeIfAbsent(t.targetUser(), k -> 0.0);
+                String targetUser = t.targetUser();
+                Double balanceUser = balances.get(user);
+                Double balanceTargetUser = balances.get(targetUser);
+                if(balanceUser == null){
+                    balances.put(user, null);
+                    return;
+                }
+                if (balanceTargetUser == null) {
+                    return;
+                }
+                balances.put(user, balanceUser - t.amount());
+                balances.put(targetUser, balanceTargetUser + t.amount());
+            }
+            case WITHDREW -> {
+                if (t.user() == null) {
+                    return;
+                }
                 balances.compute(t.user(), (k, v) -> v - t.amount());
-                balances.compute(t.targetUser(), (k, v) -> v + t.amount());
             }
         }
     }
 
     public Map<String, Double> getBalances() {
-        return Collections.unmodifiableMap(balances);
+        return balances;
     }
 }
