@@ -1,6 +1,5 @@
 package org.annill;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,8 +8,8 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-
 import java.util.TreeMap;
+import java.util.logging.Logger;
 import org.annill.model.CustomDate;
 import org.annill.model.Transaction;
 import org.annill.service.BalanceService;
@@ -18,56 +17,114 @@ import org.annill.util.DateFormatUtils;
 import org.annill.util.FileUtils;
 import org.annill.util.TransactionLogParser;
 
-
 public class Main {
 
-    private static final String PATH = "transactions_by_users/";
+    private static final String OUTPUT_SUBDIR = "transactions_by_users";
+    private static final Logger logger = Logger.getLogger(Main.class.getName());
 
-    public static void main(String[] args) throws IOException {
-        if (Files.exists(Paths.get(PATH))) {
-            return;
+    public static void main(String[] args) {
+        try {
+            validateArguments(args);
+            Path outputDir = prepareOutputDirectory(args[1]);
+
+            List<Path> logFiles = FileUtils.searchFile(args[0], ".log");
+            if (logFiles.isEmpty()) {
+                logger.warning("Файлов не найдено");
+                return;
+            }
+
+            Map<CustomDate, Transaction> transactions = parseTransactions(logFiles);
+            logger.info("Парсили транзакции");
+            BalanceService balanceService = processTransactions(transactions);
+            logger.info("Обработали транзакции");
+
+            Files.createDirectories(outputDir);
+            writeUserTransactionFiles(outputDir, transactions);
+            logger.info("Распределили транзакции по файлам");
+            writeFinalBalances(outputDir, balanceService);
+            logger.info("Добавили окончательный баланс");
+            logger.info("Вычисления выполнены успешно");
+
+        } catch (IOException e) {
+            logger.warning("Ошибка ввода-вывода: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.warning(e.getMessage());
         }
-        List<Path> files = FileUtils.searchFile("dir", ".log");
+    }
+
+    private static void validateArguments(String[] args) {
+        if (args.length != 2) {
+            throw new IllegalArgumentException(
+                """
+                    Необходимо указать два аргумента:
+                    1. Путь где искать файлы
+                    2. Путь куда сохранять результаты"""
+            );
+        }
+    }
+
+    private static Path prepareOutputDirectory(String baseOutputPath) throws IOException {
+        Path outputDir = Paths.get(baseOutputPath, OUTPUT_SUBDIR);
+
+        if (!Files.exists(Paths.get(baseOutputPath))) {
+            throw new IllegalArgumentException("Указанный путь не существует: " + baseOutputPath);
+        }
+
+        if (Files.exists(outputDir)) {
+            throw new IllegalArgumentException("Папка " + OUTPUT_SUBDIR + " уже существует");
+        }
+        return outputDir;
+    }
+
+    private static Map<CustomDate, Transaction> parseTransactions(List<Path> logFiles) throws IOException {
         Map<CustomDate, Transaction> transactions = new TreeMap<>();
 
-        for (Path file : files) {
+        for (Path file : logFiles) {
             Files.lines(file)
                 .map(TransactionLogParser::parseLogLine)
                 .forEach(t -> transactions.put(new CustomDate(t.timestamp()), t));
         }
 
+        return transactions;
+    }
+
+    private static BalanceService processTransactions(Map<CustomDate, Transaction> transactions) {
         BalanceService balanceService = new BalanceService();
         transactions.values().forEach(balanceService::processTransaction);
+        return balanceService;
+    }
 
+    private static void writeUserTransactionFiles(Path outputDir, Map<CustomDate, Transaction> transactions)
+        throws IOException {
         for (Transaction t : transactions.values()) {
-            Path userFilePath = Path.of(PATH + t.user() + ".log");
+            Path userFilePath = outputDir.resolve(t.user() + ".log");
             FileUtils.writeToFile(userFilePath, t.toString());
         }
+    }
+
+    private static void writeFinalBalances(Path outputDir, BalanceService balanceService) throws IOException {
+        String timestamp = DateFormatUtils.getFormattedTimestamp(LocalDateTime.now());
 
         balanceService.getBalances().forEach((user, balance) -> {
-            Path userFilePath = Path.of(PATH + user + ".log");
-            String logLine = String.format(
-                "[%s] %s final balance %f",
-                DateFormatUtils.getFormattedTimestamp(LocalDateTime.now()),
-                user,
-                balance
-            );
             try {
-                File file = new File(String.valueOf(userFilePath));
-                if(file.exists()){
+                Path userFilePath = outputDir.resolve(user + ".log");
+                String logLine = String.format(
+                    "[%s] %s final balance %.2f%n",
+                    timestamp,
+                    user,
+                    balance
+                );
+
+                if (Files.exists(userFilePath)) {
                     Files.write(
                         userFilePath,
                         logLine.getBytes(),
                         StandardOpenOption.APPEND
                     );
                 }
-
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Не удалось записать баланс для пользователя " + user, e);
             }
         });
-
     }
-
-
 }

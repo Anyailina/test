@@ -17,7 +17,7 @@ public class BalanceService {
                 String targetUser = t.targetUser();
                 Double balanceUser = balances.get(user);
                 Double balanceTargetUser = balances.get(targetUser);
-                if(balanceUser == null){
+                if (balanceUser == null) {
                     balances.put(user, null);
                     return;
                 }
@@ -28,10 +28,7 @@ public class BalanceService {
                 balances.put(targetUser, balanceTargetUser + t.amount());
             }
             case WITHDREW -> {
-                if (t.user() == null) {
-                    return;
-                }
-                balances.compute(t.user(), (k, v) -> v - t.amount());
+                balances.compute(user, (k, balanceUser) -> balanceUser - t.amount());
             }
         }
     }

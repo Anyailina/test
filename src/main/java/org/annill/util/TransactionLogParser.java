@@ -1,26 +1,20 @@
 package org.annill.util;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.annill.model.Transaction;
 import org.annill.model.OperationType;
+import org.annill.model.Transaction;
 
 public final class TransactionLogParser {
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     private static final Pattern LOG_PATTERN = Pattern.compile(
-        "^\\[(.*?)]\\s" +
-            "(\\w+)\\s" +
-            "(" + OperationType.getPatternString() + ")\\s" +
-            "(\\d+(?:\\.\\d+)?)" +
-            "(?:\\s+to\\s+(\\w+))?$");
-
-    private TransactionLogParser() {
-    }
+        "^\\[(.+?)]\\s+" +               // Временная метка
+            "(\\w+)\\s+" +                  // Пользователь
+            "(\\w+(?:\\s+\\w+)?)\\s+" +     // Тип операции (может быть из двух слов, напр. "balance inquiry")
+            "(\\d+(?:\\.\\d+)?)" +          // Сумма
+            "(?:\\s+to\\s+(\\w+))?$"        // Опциональный получатель
+    );
 
     public static Transaction parseLogLine(String logLine) {
         if (logLine == null || logLine.isBlank()) {
@@ -44,7 +38,7 @@ public final class TransactionLogParser {
 
     private static LocalDateTime parseTimestamp(String timestampStr) {
         try {
-            return LocalDateTime.parse(timestampStr, DATE_TIME_FORMATTER);
+            return LocalDateTime.parse(timestampStr, DateFormatUtils.LOG_FORMATTER);
         } catch (Exception e) {
             throw new IllegalArgumentException("Неправильный формат времени: " + timestampStr);
         }
@@ -67,7 +61,7 @@ public final class TransactionLogParser {
         String originalLogLine) {
 
         return switch (operation) {
-            case BALANCE_INQUIRY -> new Transaction(timestamp, user, operation, amount, null);
+            case BALANCE_INQUIRY, WITHDREW -> new Transaction(timestamp, user, operation, amount, null);
 
             case TRANSFERRED -> {
                 if (targetUser == null) {
@@ -76,8 +70,6 @@ public final class TransactionLogParser {
                 }
                 yield new Transaction(timestamp, user, operation, amount, targetUser);
             }
-
-            case WITHDREW -> null;
         };
     }
 

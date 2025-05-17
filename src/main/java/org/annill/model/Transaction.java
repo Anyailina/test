@@ -3,12 +3,8 @@ package org.annill.model;
 import java.time.LocalDateTime;
 import org.annill.util.DateFormatUtils;
 
-public record Transaction(
-    LocalDateTime timestamp,
-    String user,
-    OperationType operationType,
-    double amount,
-    String targetUser) {
+public record Transaction(LocalDateTime timestamp, String user, OperationType operationType, double amount,
+                          String targetUser) {
 
 
     @Override

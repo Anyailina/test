@@ -1,9 +1,7 @@
 package org.annill.model;
 
 public enum OperationType {
-    BALANCE_INQUIRY("balance inquiry"),
-    TRANSFERRED("transferred"),
-    WITHDREW("withdrew");
+    BALANCE_INQUIRY("balance inquiry"), TRANSFERRED("transferred"), WITHDREW("withdrew");
 
     private final String text;
 
