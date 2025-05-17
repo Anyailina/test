@@ -6,7 +6,6 @@ import org.annill.util.DateFormatUtils;
 public record Transaction(LocalDateTime timestamp, String user, OperationType operationType, double amount,
                           String targetUser) {
 
-
     @Override
     public String toString() {
         String action = "";

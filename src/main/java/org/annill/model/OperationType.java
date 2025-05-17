@@ -1,7 +1,11 @@
 package org.annill.model;
 
 public enum OperationType {
-    BALANCE_INQUIRY("balance inquiry"), TRANSFERRED("transferred"), WITHDREW("withdrew");
+    BALANCE_INQUIRY("balance inquiry"),
+    TRANSFERRED("transferred"),
+    WITHDREW("withdrew"),
+
+    ;
 
     private final String text;
 
@@ -16,9 +20,5 @@ public enum OperationType {
             }
         }
         throw new IllegalArgumentException("Неизвестная операция: " + text);
-    }
-
-    public static String getPatternString() {
-        return String.join("|", BALANCE_INQUIRY.text, TRANSFERRED.text, WITHDREW.text);
     }
 }

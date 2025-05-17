@@ -1,6 +1,5 @@
 package org.annill.service;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import org.annill.model.Transaction;
@@ -27,9 +26,7 @@ public class BalanceService {
                 balances.put(user, balanceUser - t.amount());
                 balances.put(targetUser, balanceTargetUser + t.amount());
             }
-            case WITHDREW -> {
-                balances.compute(user, (k, balanceUser) -> balanceUser - t.amount());
-            }
+            case WITHDREW -> balances.compute(user, (k, balanceUser) -> balanceUser - t.amount());
         }
     }
 
