@@ -108,15 +108,12 @@ public class Main {
         balanceService.getBalances().forEach((user, balance) -> {
             try {
                 Path userFilePath = outputDir.resolve(user + ".log");
-                String logLine = String.format("[%s] %s final balance %f %n", timestamp, user, balance);
+                String logLine = String.format(
+                    "[%s] %s final balance %.2f%n", timestamp, user, balance
+                );
 
                 if (Files.exists(userFilePath)) {
-
-                    Files.write(
-                        userFilePath,
-                        logLine.getBytes(),
-                        StandardOpenOption.APPEND
-                    );
+                    Files.write(userFilePath, logLine.getBytes(), StandardOpenOption.APPEND);
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Не удалось записать баланс для пользователя " + user, e);
