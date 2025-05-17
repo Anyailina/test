@@ -1,5 +1,7 @@
 package org.annill;
 
+import static org.annill.util.FileUtils.deleteAllLogFiles;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,13 +27,15 @@ public class Main {
     public static void main(String[] args) {
         try {
             validateArguments(args);
-            Path outputDir = prepareOutputDirectory(args[1]);
+            Path outputDir = Paths.get(args[1], OUTPUT_SUBDIR);
+            prepareOutputDirectory(args[1]);
 
             List<Path> logFiles = FileUtils.searchFile(args[0], ".log");
             if (logFiles.isEmpty()) {
-                logger.warning("Файлов не найдено");
-                return;
+                throw new FileNotFoundException("Файлов не найдено");
             }
+
+            deleteAllLogFiles(outputDir);
 
             Map<CustomDate, Transaction> transactions = parseTransactions(logFiles);
             logger.info("Парсили транзакции");
@@ -45,10 +49,10 @@ public class Main {
             logger.info("Добавили окончательный баланс");
             logger.info("Вычисления выполнены успешно");
 
+        } catch (FileNotFoundException e) {
+            logger.warning("Файл не найден" + e.getMessage());
         } catch (IOException e) {
             logger.warning("Ошибка ввода-вывода: " + e.getMessage());
-        } catch (IllegalArgumentException e) {
-            logger.warning(e.getMessage());
         }
     }
 
@@ -63,17 +67,12 @@ public class Main {
         }
     }
 
-    private static Path prepareOutputDirectory(String baseOutputPath) throws IOException {
-        Path outputDir = Paths.get(baseOutputPath, OUTPUT_SUBDIR);
+    private static void prepareOutputDirectory(String baseOutputPath) throws IOException {
 
         if (!Files.exists(Paths.get(baseOutputPath))) {
             throw new IllegalArgumentException("Указанный путь не существует: " + baseOutputPath);
         }
 
-        if (Files.exists(outputDir)) {
-            throw new IllegalArgumentException("Папка " + OUTPUT_SUBDIR + " уже существует");
-        }
-        return outputDir;
     }
 
     private static Map<CustomDate, Transaction> parseTransactions(List<Path> logFiles) throws IOException {
@@ -96,6 +95,7 @@ public class Main {
 
     private static void writeUserTransactionFiles(Path outputDir, Map<CustomDate, Transaction> transactions)
         throws IOException {
+
         for (Transaction t : transactions.values()) {
             Path userFilePath = outputDir.resolve(t.user() + ".log");
             FileUtils.writeToFile(userFilePath, t.toString());
@@ -108,14 +108,10 @@ public class Main {
         balanceService.getBalances().forEach((user, balance) -> {
             try {
                 Path userFilePath = outputDir.resolve(user + ".log");
-                String logLine = String.format(
-                    "[%s] %s final balance %.2f%n",
-                    timestamp,
-                    user,
-                    balance
-                );
+                String logLine = String.format("[%s] %s final balance %f %n", timestamp, user, balance);
 
                 if (Files.exists(userFilePath)) {
+
                     Files.write(
                         userFilePath,
                         logLine.getBytes(),
